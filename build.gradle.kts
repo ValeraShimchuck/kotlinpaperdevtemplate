@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.yaml.snakeyaml.DumperOptions
 import org.yaml.snakeyaml.Yaml
 import java.io.FileWriter
 import java.io.FileReader
@@ -65,7 +66,10 @@ tasks.register("replaceTemplate") {
         if (!templatePackageDir.exists() || !templateClassFile.exists()) {
             error("Template has been replaced")
         }
-        val yaml: Yaml = Yaml()
+        val yaml: Yaml = Yaml(DumperOptions().apply {
+            defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
+            isPrettyFlow = true
+        })
         val pluginyml: MutableMap<String, Any> = HashMap(FileReader(File(resources, "plugin.yml")).use { reader ->
             yaml.load(reader) as Map<String, Any>
         })
@@ -84,13 +88,17 @@ tasks.register("replaceTemplate") {
             val newMainClassFile: File = File(packageDir, "$mainClass.kt")
             templateClassFile.renameTo(newMainClassFile)
             val oldContent: String = newMainClassFile.readText()
-            newMainClassFile.writeText(oldContent.replace("tmp.template.kotlinpaperplugintemplate", mainPackagePath))
-            newMainClassFile.writeText(oldContent.replace("KotlinPaperPluginTemplate", mainClass))
+            newMainClassFile.writeText(oldContent
+                .replace("tmp.template.kotlinpaperplugintemplate", mainPackagePath)
+                .replace("KotlinPaperPluginTemplate", mainClass))
             var parentFile: File = templatePackageDir
             while (parentFile != mainKotlinDir) {
                 val temp: File = parentFile
                 parentFile = parentFile.parentFile
                 temp.delete()
+            }
+            exec {
+                commandLine("git","add",".")
             }
         }
 
