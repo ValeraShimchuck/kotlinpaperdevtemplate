@@ -57,15 +57,16 @@ tasks.withType<ProcessResources> {
 
 tasks.register("replaceTemplate") {
     doLast {
-        val mainKotlinDir: File = sourceSets["main"].kotlin.srcDirs.single()
+        val mainKotlinDir: File = sourceSets["main"].kotlin.srcDirs.first { it.name.endsWith("kotlin") }
+        val resources: File = sourceSets["main"].resources.singleFile.parentFile
         val templatePackage: String = "tmp.template.kotlinpaperplugintemplate"
         val templatePackageDir: File = File(mainKotlinDir, templatePackage.replace('.', '/'))
-        val templateClassFile: File = File(templatePackageDir, "KotlinPaperPluginTemplate.kts")
+        val templateClassFile: File = File(templatePackageDir, "KotlinPaperPluginTemplate.kt")
         if (!templatePackageDir.exists() || !templateClassFile.exists()) {
             error("Template has been replaced")
         }
         val yaml: Yaml = Yaml()
-        val pluginyml: MutableMap<String, Any> = HashMap(FileReader("plugin.yml").use { reader ->
+        val pluginyml: MutableMap<String, Any> = HashMap(FileReader(File(resources, "plugin.yml")).use { reader ->
             yaml.load(reader) as Map<String, Any>
         })
         val name: String = project.properties["name"]!!.toString()
@@ -74,13 +75,23 @@ tasks.register("replaceTemplate") {
         val mainClassPath: String = "$mainPackagePath.$mainClass"
         pluginyml["name"] = name
         pluginyml["main"] = mainClassPath
+        FileWriter(File(resources, "plugin.yml")).use { writer ->
+            yaml.dump(pluginyml, writer)
+        }
         val packageDir = File(mainKotlinDir, mainPackagePath.replace('.', '/'))
         if (!packageDir.exists()) {
             packageDir.mkdirs()
-            val newMainClassFile: File = File(packageDir, "$mainClass.kts")
+            val newMainClassFile: File = File(packageDir, "$mainClass.kt")
             templateClassFile.renameTo(newMainClassFile)
             val oldContent: String = newMainClassFile.readText()
+            newMainClassFile.writeText(oldContent.replace("tmp.template.kotlinpaperplugintemplate", mainPackagePath))
             newMainClassFile.writeText(oldContent.replace("KotlinPaperPluginTemplate", mainClass))
+            var parentFile: File = templatePackageDir
+            while (parentFile != mainKotlinDir) {
+                val temp: File = parentFile
+                parentFile = parentFile.parentFile
+                temp.delete()
+            }
         }
 
     }
