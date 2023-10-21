@@ -96,6 +96,8 @@ tasks.register("replaceTemplate") {
                 val temp: File = parentFile
                 parentFile = parentFile.parentFile
                 temp.delete()
+                val renamedFile: File = File(project.rootDir.parentFile, name)
+                project.rootDir.renameTo(renamedFile)
             }
             exec {
                 commandLine("git","add",".")
