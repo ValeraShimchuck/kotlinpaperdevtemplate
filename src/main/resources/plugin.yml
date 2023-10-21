@@ -1,0 +1,4 @@
+name: KotlinPaperPluginTemplate
+version: '${version}'
+main: 'tmp.template.kotlinpaperplugintemplate.KotlinPaperPluginTemplate'
+api-version: '1.19'
